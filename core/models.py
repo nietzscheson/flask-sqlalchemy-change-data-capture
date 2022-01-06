@@ -3,7 +3,7 @@ from sqlalchemy import event
 from sqlalchemy.orm.attributes import get_history
 from uuid import uuid4
 from flask import g
-
+import json
 db = SQLAlchemy()
 
 class User(db.Model):

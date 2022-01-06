@@ -14,7 +14,7 @@ WORKDIR /core
 
 COPY Pipfile* .
 
-# RUN pipenv lock
+RUN pipenv lock
 RUN pipenv install --system --deploy
 
 COPY . .
