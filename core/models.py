@@ -6,10 +6,18 @@ from flask import g
 import json
 db = SQLAlchemy()
 
-class User(db.Model):
+class Resource(db.Model):
+    __abstract__ = True
     id = db.Column(db.Integer, primary_key=True)
+    created_at = db.Column(db.DateTime, default=db.func.now())
+    updated_at = db.Column(db.DateTime, default=db.func.now(), onupdate=db.func.now())
+class User(Resource):
     first_name = db.Column(db.String(80), nullable=False)
     last_name = db.Column(db.String(120), nullable=False)
+    
+class Post(Resource):
+   title = db.Column(db.String(255), nullable=False)
+   description = db.Column(db.Text(), nullable=True)
 
 
 class AuditLog(db.Model):
