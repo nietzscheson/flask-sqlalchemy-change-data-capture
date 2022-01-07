@@ -12,9 +12,9 @@ app.config.from_object("config.Config")
 db.init_app(app)
 migrate = Migrate(app, db)
 
-@app.before_request
-def before_request_handler():
-    g.request_id = uuid4()
+# @app.before_request
+# def before_request_handler():
+#     g.request_id = uuid4()
 
 app.add_url_rule("/graphql", view_func=GraphQLView.as_view("graphql", schema=schema, graphiql=True))
 
