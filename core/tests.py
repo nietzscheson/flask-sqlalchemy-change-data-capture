@@ -2,7 +2,7 @@ import os
 from flask import Flask, jsonify
 import unittest
 from app import app
-from models import db, User
+from models import db, User, AuditLog
 import requests
 import json
 
@@ -32,6 +32,7 @@ class TestFunctionalTestCaseBase(unittest.TestCase):
         Ensures that the database is emptied for next unittest
         """
         with self.app.app_context():
+            pass
             db.drop_all()
 class TestDatabase(TestFunctionalTestCaseBase):
 
@@ -45,44 +46,76 @@ class TestDatabase(TestFunctionalTestCaseBase):
             self.assertEqual(User.query.get(1).first_name, "Isabella")
             self.assertEqual(User.query.get(1).last_name, "Angulo")
             
-class TestApiGraphQl(TestFunctionalTestCaseBase):
-    def setUp(self):
-        """Set up function called when class is consructed."""
-        self.client = app.test_client(self)
-        self.headers = {'content-type': 'application/json'}
-        return super().setUp()
-    
-    def test_user_create(self):
-        
-        payload = {"query":'mutation{userCreate(firstName:"Isabella",lastName:"Angulo"){ok user{id firstName lastName}}}'}
-    
-        response = self.client.post("/graphql", data=payload)
-        
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.get_json(), {'data': {'userCreate': {'ok': True, 'user': {'id': '1', 'firstName': 'Isabella', 'lastName': 'Angulo'}}}})
-
+            print(AuditLog.query.all())
+            
     def test_user_update(self):
+	
         with self.app.app_context():
             user = User(first_name="Isabella", last_name="Angulo")
             db.session.add(user)
             db.session.commit()
-        
-            payload = {"query":'mutation{userUpdate(id: %s, firstName:"Isabella",lastName:"Angulo Nova"){ok user{id firstName lastName}}}' % (user.id)}
-    
-            response = self.client.post("/graphql", data=payload)
-        
-            self.assertEqual(response.status_code, 200)
-            self.assertEqual(response.get_json(), {'data': {'userUpdate': {'ok': True, 'user': {'id': '1', 'firstName': 'Isabella', 'lastName': 'Angulo Nova'}}}})
+
+            self.assertEqual(User.query.get(1).first_name, "Isabella")
+            self.assertEqual(User.query.get(1).last_name, "Angulo")
+            
+            user.last_name = "Angulo Nova"
+            db.session.commit()
+            
+            self.assertEqual(User.query.get(1).last_name, "Angulo Nova")
             
     def test_user_delete(self):
+		
         with self.app.app_context():
             user = User(first_name="Isabella", last_name="Angulo")
             db.session.add(user)
             db.session.commit()
-        
-            payload = {"query":'mutation{userDelete(id: %s){ok user{id firstName lastName}}}' % (user.id)}
-    
-            response = self.client.post("/graphql", data=payload)
 
-            self.assertEqual(response.status_code, 200)
-            self.assertEqual(response.get_json(), {'data': {'userDelete': {'ok': True, 'user': {'id': '1', 'firstName': 'Isabella', 'lastName': 'Angulo'}}}})
+            self.assertEqual(User.query.get(1).first_name, "Isabella")
+            self.assertEqual(User.query.get(1).last_name, "Angulo")
+            
+            db.session.delete(user)
+            db.session.commit()
+            
+            self.assertEqual(User.query.all(), [])
+            
+# class TestApiGraphQl(TestFunctionalTestCaseBase):
+#     def setUp(self):
+#         """Set up function called when class is consructed."""
+#         self.client = app.test_client(self)
+#         self.headers = {'content-type': 'application/json'}
+#         return super().setUp()
+#     
+#     def test_user_create(self):
+#         
+#         payload = {"query":'mutation{userCreate(firstName:"Isabella",lastName:"Angulo"){ok user{id firstName lastName}}}'}
+#     
+#         response = self.client.post("/graphql", data=payload)
+#         
+#         self.assertEqual(response.status_code, 200)
+#         self.assertEqual(response.get_json(), {'data': {'userCreate': {'ok': True, 'user': {'id': '1', 'firstName': 'Isabella', 'lastName': 'Angulo'}}}})
+# 
+#     def test_user_update(self):
+#         with self.app.app_context():
+#             user = User(first_name="Isabella", last_name="Angulo")
+#             db.session.add(user)
+#             db.session.commit()
+#         
+#             payload = {"query":'mutation{userUpdate(id: %s, firstName:"Isabella",lastName:"Angulo Nova"){ok user{id firstName lastName}}}' % (user.id)}
+#     
+#             response = self.client.post("/graphql", data=payload)
+#         
+#             self.assertEqual(response.status_code, 200)
+#             self.assertEqual(response.get_json(), {'data': {'userUpdate': {'ok': True, 'user': {'id': '1', 'firstName': 'Isabella', 'lastName': 'Angulo Nova'}}}})
+#             
+#     def test_user_delete(self):
+#         with self.app.app_context():
+#             user = User(first_name="Isabella", last_name="Angulo")
+#             db.session.add(user)
+#             db.session.commit()
+#         
+#             payload = {"query":'mutation{userDelete(id: %s){ok user{id firstName lastName}}}' % (user.id)}
+#     
+#             response = self.client.post("/graphql", data=payload)
+# 
+#             self.assertEqual(response.status_code, 200)
+#             self.assertEqual(response.get_json(), {'data': {'userDelete': {'ok': True, 'user': {'id': '1', 'firstName': 'Isabella', 'lastName': 'Angulo'}}}})

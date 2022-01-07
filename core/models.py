@@ -12,31 +12,44 @@ class Resource(db.Model):
     created_at = db.Column(db.DateTime, default=db.func.now())
     updated_at = db.Column(db.DateTime, default=db.func.now(), onupdate=db.func.now())
 class User(Resource):
+    __tablename = "user"
+    __versioned__ = {}
     first_name = db.Column(db.String(80), nullable=False)
     last_name = db.Column(db.String(120), nullable=False)
     
 class Post(Resource):
-   title = db.Column(db.String(255), nullable=False)
-   description = db.Column(db.Text(), nullable=True)
+    __tablename = "post"
+    __versioned__ = {}
+    title = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text(), nullable=True)
 
 
 class AuditLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    request_id = db.Column(db.String(80), nullable=False)
+    # request_id = db.Column(db.String(80), nullable=False)
     history = db.Column(db.Text(), nullable=True)
     model_name = db.Column(db.String(80), nullable=False)
     original_id = db.Column(db.Integer)
     db_event_name = db.Column(db.String(80), nullable=False)
+    
 
 
-# @event.listens_for(db.session, 'after_flush')
-# def db_after_flush(session, flush_context):
-#     for instance in session.new:
-#         if isinstance(instance, AuditLog):
-#             continue
-#         al = AuditLog(request_id=str(g.request_id), model_name="user",
-#                       original_id=instance.id,  db_event_name="create")
-#         session.add(al)
+@event.listens_for(db.session, 'after_flush')
+def db_after_flush(session, flush_context):
+    for instance in session.new:
+        if hasattr(instance, "__versioned__"):
+            d = {}
+            for column in instance.__table__.columns:
+                d[column.name] = str(getattr(instance, column.name))
+                
+            al = AuditLog(history=str(d), model_name=instance.__tablename__, original_id=instance.id,  db_event_name="create")
+            session.add(al)
+            
+        # if isinstance(instance, AuditLog):
+        #     continue
+        # al = AuditLog(request_id=str(g.request_id), model_name="user",
+        #               original_id=instance.id,  db_event_name="create")
+        # session.add(al)
 # 
 # 
 # @event.listens_for(db.session, 'before_flush')
