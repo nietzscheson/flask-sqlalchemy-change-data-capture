@@ -46,7 +46,12 @@ class TestDatabase(TestFunctionalTestCaseBase):
             self.assertEqual(User.query.get(1).first_name, "Isabella")
             self.assertEqual(User.query.get(1).last_name, "Angulo")
             
-            print(AuditLog.query.all())
+            audit_log = AuditLog.query.all()
+            self.assertEqual(len(audit_log), 1)
+            
+            data = { x.name: str(getattr(user, x.name)) for x in user.__table__.columns }
+            
+            self.assertEqual(str(audit_log[0].payload), str(data))
             
     def test_user_update(self):
 	
@@ -54,7 +59,7 @@ class TestDatabase(TestFunctionalTestCaseBase):
             user = User(first_name="Isabella", last_name="Angulo")
             db.session.add(user)
             db.session.commit()
-
+            
             self.assertEqual(User.query.get(1).first_name, "Isabella")
             self.assertEqual(User.query.get(1).last_name, "Angulo")
             
@@ -62,6 +67,12 @@ class TestDatabase(TestFunctionalTestCaseBase):
             db.session.commit()
             
             self.assertEqual(User.query.get(1).last_name, "Angulo Nova")
+            
+            audit_log = AuditLog.query.all()
+            self.assertEqual(len(audit_log), 2)
+            self.assertEqual(audit_log[1].payload, json.dumps({"last_name": "Angulo Nova"}))
+            
+
             
     def test_user_delete(self):
 		
